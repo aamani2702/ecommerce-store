@@ -1,0 +1,56 @@
+    TRUNCATE product_variants, products, categories RESTART IDENTITY CASCADE;
+
+    INSERT INTO categories (name, slug) VALUES
+      ('Sarees', 'sarees'),
+      ('Kurtas', 'kurtas'),
+      ('Lehengas', 'lehengas'),
+      ('Sherwanis', 'sherwanis'),
+      ('Dupattas', 'dupattas');
+
+    INSERT INTO products (category_id, name, description, price, gender, fabric, occasion, image_url) VALUES
+      ((SELECT id FROM categories WHERE slug = 'sarees'), 'Banarasi Silk Saree',
+       'Handwoven Banarasi silk saree with golden zari border.', 8499, 'women', 'Silk', 'Wedding',
+       'https://placehold.co/600x800?text=Banarasi+Silk+Saree'),
+      ((SELECT id FROM categories WHERE slug = 'sarees'), 'Cotton Handloom Saree',
+       'Light and breathable handloom cotton saree for daily elegance.', 2499, 'women', 'Cotton', 'Casual',
+       'https://placehold.co/600x800?text=Cotton+Handloom+Saree'),
+      ((SELECT id FROM categories WHERE slug = 'kurtas'), 'Embroidered Anarkali Kurta Set',
+       'Flared georgette Anarkali with thread embroidery, comes with dupatta.', 3999, 'women', 'Georgette', 'Festive',
+       'https://placehold.co/600x800?text=Anarkali+Kurta+Set'),
+      ((SELECT id FROM categories WHERE slug = 'kurtas'), 'Mens Cotton Kurta Pajama',
+       'Classic cotton kurta pajama set for festivals and family functions.', 1899, 'men', 'Cotton', 'Festive',
+       'https://placehold.co/600x800?text=Mens+Kurta+Pajama'),
+      ((SELECT id FROM categories WHERE slug = 'lehengas'), 'Bridal Velvet Lehenga Choli',
+       'Heavy embroidered velvet lehenga with matching choli and net dupatta.', 24999, 'women', 'Velvet', 'Wedding',
+       'https://placehold.co/600x800?text=Bridal+Lehenga'),
+      ((SELECT id FROM categories WHERE slug = 'sherwanis'), 'Ivory Silk Sherwani',
+       'Royal ivory silk sherwani with subtle embroidery for the groom.', 14999, 'men', 'Silk', 'Wedding',
+       'https://placehold.co/600x800?text=Ivory+Silk+Sherwani'),
+      ((SELECT id FROM categories WHERE slug = 'dupattas'), 'Phulkari Dupatta',
+       'Vibrant hand embroidered Phulkari dupatta.', 1299, 'women', 'Cotton', 'Festive',
+       'https://placehold.co/600x800?text=Phulkari+Dupatta'),
+      ((SELECT id FROM categories WHERE slug = 'kurtas'), 'Kids Silk Kurta Set',
+       'Comfortable silk kurta set for little ones on festive days.', 1599, 'kids', 'Silk', 'Festive',
+       'https://placehold.co/600x800?text=Kids+Kurta+Set');
+
+    INSERT INTO product_variants (product_id, size, color, stock) VALUES
+      ((SELECT id FROM products WHERE name = 'Banarasi Silk Saree'), 'Free Size', 'Maroon', 10),
+      ((SELECT id FROM products WHERE name = 'Banarasi Silk Saree'), 'Free Size', 'Emerald', 6),
+      ((SELECT id FROM products WHERE name = 'Cotton Handloom Saree'), 'Free Size', 'Mustard', 15),
+      ((SELECT id FROM products WHERE name = 'Cotton Handloom Saree'), 'Free Size', 'Teal', 12),
+      ((SELECT id FROM products WHERE name = 'Embroidered Anarkali Kurta Set'), 'S', 'Pink', 8),
+      ((SELECT id FROM products WHERE name = 'Embroidered Anarkali Kurta Set'), 'M', 'Pink', 10),
+      ((SELECT id FROM products WHERE name = 'Embroidered Anarkali Kurta Set'), 'L', 'Pink', 5),
+      ((SELECT id FROM products WHERE name = 'Mens Cotton Kurta Pajama'), 'M', 'White', 12),
+      ((SELECT id FROM products WHERE name = 'Mens Cotton Kurta Pajama'), 'L', 'White', 9),
+      ((SELECT id FROM products WHERE name = 'Mens Cotton Kurta Pajama'), 'XL', 'White', 4),
+      ((SELECT id FROM products WHERE name = 'Mens Cotton Kurta Pajama'), 'M', 'Navy', 7),
+      ((SELECT id FROM products WHERE name = 'Bridal Velvet Lehenga Choli'), 'S', 'Red', 3),
+      ((SELECT id FROM products WHERE name = 'Bridal Velvet Lehenga Choli'), 'M', 'Red', 4),
+      ((SELECT id FROM products WHERE name = 'Bridal Velvet Lehenga Choli'), 'L', 'Red', 2),
+      ((SELECT id FROM products WHERE name = 'Ivory Silk Sherwani'), 'M', 'Ivory', 3),
+      ((SELECT id FROM products WHERE name = 'Ivory Silk Sherwani'), 'L', 'Ivory', 3),
+      ((SELECT id FROM products WHERE name = 'Phulkari Dupatta'), 'Free Size', 'Orange', 20),
+      ((SELECT id FROM products WHERE name = 'Phulkari Dupatta'), 'Free Size', 'Pink', 18),
+      ((SELECT id FROM products WHERE name = 'Kids Silk Kurta Set'), '4-5Y', 'Blue', 6),
+      ((SELECT id FROM products WHERE name = 'Kids Silk Kurta Set'), '6-7Y', 'Blue', 6);

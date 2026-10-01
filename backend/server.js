@@ -2,10 +2,16 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const pool = require("./db");
+const authRoutes = require("./routes/auth");
+const categoryRoutes = require("./routes/categories");
+const productRoutes = require("./routes/products");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use("/api/auth", authRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/products", productRoutes);
 
 app.get("/", (req, res) => {
   res.send("E-commerce API is running");
