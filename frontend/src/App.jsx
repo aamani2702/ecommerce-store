@@ -5,14 +5,9 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-
-function Placeholder({ title }) {
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-16">
-      <h1 className="text-3xl">{title}</h1>
-    </div>
-  );
-}
+import Home from "./pages/Home";
+import Shop from "./pages/Shop";
+import ProductDetail from "./pages/ProductDetail";
 
 export default function App() {
   return (
@@ -22,7 +17,9 @@ export default function App() {
           <Navbar />
           <main className="min-h-[70vh]">
             <Routes>
-              <Route path="/" element={<Placeholder title="Home" />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               {/* More routes are added in the next phases */}
