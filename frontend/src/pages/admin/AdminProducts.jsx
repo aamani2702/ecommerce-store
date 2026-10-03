@@ -21,6 +21,7 @@ export default function AdminProducts() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [variantText, setVariantText] = useState("Free Size, Maroon, 10");
   const [message, setMessage] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   function loadProducts() {
     api
@@ -63,6 +64,23 @@ export default function AdminProducts() {
       loadProducts();
     } catch (err) {
       setMessage(err.response?.data?.message || "Could not create the product");
+    }
+  }
+
+  async function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("image", file);
+    setUploading(true);
+    setMessage("");
+    try {
+      const res = await api.post("/uploads", formData);
+      setForm((f) => ({ ...f, image_url: res.data.url }));
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Upload failed");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -160,6 +178,13 @@ export default function AdminProducts() {
             value={form.image_url}
             onChange={handleChange}
           />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="text-sm"
+          />
+          {uploading && <p className="text-sm">Uploading...</p>}
 
           <label className="block text-sm">
             Variants, one per line: Size, Colour, Stock
