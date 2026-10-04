@@ -43,5 +43,9 @@ export const BRAND = {
   categoryImages: {},
   categoryImages: {
     sarees: "/categories/sarees.webp",
+    lehengas: "/categories/lehengas.jpg",
+    kurtas: "/categories/kurtas.webp",
+    dupattas: "/categories/dupattas.jfif",
+    sherwanis: "/categories/sherwanis.jfif",
   },
 };
