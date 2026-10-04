@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api";
+import HeroSlider from "../components/HeroSlider";
 import ProductCard from "../components/ProductCard";
 import { BRAND } from "../config";
 
@@ -17,51 +18,45 @@ export default function Home() {
 
   return (
     <>
-      {/* Hero */}
-      <section className="bg-primary text-cream">
-        <div className="max-w-6xl mx-auto px-4 py-16 grid md:grid-cols-2 gap-10 items-center">
-          <div>
-            <h1 className="text-4xl md:text-5xl leading-tight">
-              {BRAND.heroTitle}
-            </h1>
-            <p className="mt-4 text-cream/80">{BRAND.heroText}</p>
-            <Link to="/shop" className="btn bg-accent text-ink mt-6">
-              Shop now
-            </Link>
-          </div>
-          <img
-            src={BRAND.heroImage}
-            alt=""
-            className="rounded-lg w-full max-h-[420px] object-cover"
-          />
-        </div>
-      </section>
+      <HeroSlider />
 
-      {/* Categories */}
-      <section className="max-w-6xl mx-auto px-4 py-12">
-        <h2 className="text-2xl mb-6">Shop by category</h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      {/* Categories with pictures */}
+      <section className="max-w-7xl mx-auto px-4 py-14">
+        <h2 className="text-4xl text-center mb-8">Shop by category</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
           {categories.map((c) => (
             <Link
               key={c.id}
               to={`/shop?category=${c.slug}`}
-              className="border border-primary/20 bg-white rounded-lg py-8 text-center font-heading text-lg hover:bg-primary hover:text-cream transition"
+              className="group block text-center"
             >
-              {c.name}
+              <div className="aspect-[4/5] overflow-hidden rounded-lg bg-sand">
+                <img
+                  src={
+                    BRAND.categoryImages[c.slug] ||
+                    `https://placehold.co/400x500/f2e9df/9a5b63?text=${encodeURIComponent(c.name)}`
+                  }
+                  alt={c.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                />
+              </div>
+              <h3 className="mt-3 text-2xl group-hover:text-primary transition">
+                {c.name}
+              </h3>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Featured */}
-      <section className="max-w-6xl mx-auto px-4">
+      {/* New arrivals */}
+      <section className="max-w-7xl mx-auto px-4">
         <div className="flex items-end justify-between mb-6">
-          <h2 className="text-2xl">New arrivals</h2>
+          <h2 className="text-4xl">New arrivals</h2>
           <Link to="/shop" className="text-primary underline text-sm">
             View all
           </Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           {featured.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}

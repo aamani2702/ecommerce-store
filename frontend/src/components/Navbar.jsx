@@ -14,15 +14,18 @@ export default function Navbar() {
   }
 
   const linkClass = ({ isActive }) =>
-    isActive ? "text-accent" : "hover:text-accent";
+    isActive ? "text-primary font-semibold" : "hover:text-primary";
 
   return (
-    <header className="bg-primary text-cream sticky top-0 z-20 shadow">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="font-heading text-2xl tracking-wide">
+    <header className="bg-pastel text-ink sticky top-0 z-20 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <Link
+          to="/"
+          className="font-heading text-3xl font-semibold tracking-wide"
+        >
           {BRAND.name}
         </Link>
-        <nav className="flex items-center gap-3 sm:gap-5 text-sm">
+        <nav className="flex items-center gap-3 sm:gap-6 text-sm tracking-wide">
           <NavLink to="/shop" className={linkClass}>
             Shop
           </NavLink>
@@ -36,7 +39,7 @@ export default function Navbar() {
               Orders
             </NavLink>
           )}
-          <Link to="/cart" className="relative hover:text-accent">
+          <Link to="/cart" className="relative hover:text-primary">
             Cart
             {cart.itemCount > 0 && (
               <span className="absolute -top-2 -right-4 bg-accent text-ink text-xs rounded-full px-1.5">
@@ -45,7 +48,7 @@ export default function Navbar() {
             )}
           </Link>
           {user ? (
-            <button onClick={handleLogout} className="hover:text-accent">
+            <button onClick={handleLogout} className="hover:text-primary">
               Logout
             </button>
           ) : (

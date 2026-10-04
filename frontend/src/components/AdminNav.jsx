@@ -8,6 +8,9 @@ export default function AdminNav() {
       <NavLink to="/admin/products" className={cls}>
         Products
       </NavLink>
+      <NavLink to="/admin/categories" className={cls}>
+        Categories
+      </NavLink>
       <NavLink to="/admin/orders" className={cls}>
         Orders
       </NavLink>
