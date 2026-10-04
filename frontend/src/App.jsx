@@ -3,17 +3,19 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
-import ProtectedRoute from "./components/ProtectedRoute";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminProductImages from "./pages/admin/AdminProductImages";
+import AdminCategories from "./pages/admin/AdminCategories";
 import AdminOrders from "./pages/admin/AdminOrders";
 
 export default function App() {
@@ -29,22 +31,6 @@ export default function App() {
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route
-                path="/admin/products"
-                element={
-                  <ProtectedRoute adminOnly>
-                    <AdminProducts />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/orders"
-                element={
-                  <ProtectedRoute adminOnly>
-                    <AdminOrders />
-                  </ProtectedRoute>
-                }
-              />
               <Route
                 path="/cart"
                 element={
@@ -77,7 +63,38 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
-              {/* More routes are added in the next phases */}
+              <Route
+                path="/admin/products"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminProducts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/products/:id/images"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminProductImages />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/categories"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminCategories />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/orders"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminOrders />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </main>
           <Footer />

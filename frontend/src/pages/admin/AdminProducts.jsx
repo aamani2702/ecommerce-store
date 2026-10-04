@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api";
 import AdminNav from "../../components/AdminNav";
+import ImageManager from "../../components/ImageManager";
 import { formatPrice } from "../../utils";
 
 const EMPTY_FORM = {
@@ -12,16 +13,15 @@ const EMPTY_FORM = {
   gender: "women",
   fabric: "",
   occasion: "",
-  image_url: "",
 };
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [images, setImages] = useState([]);
   const [variantText, setVariantText] = useState("Free Size, Maroon, 10");
   const [message, setMessage] = useState("");
-  const [uploading, setUploading] = useState(false);
 
   function loadProducts() {
     api
@@ -53,34 +53,32 @@ export default function AdminProducts() {
       });
 
     try {
-      await api.post("/products", {
+      // The first image is the cover and is saved with the product
+      const res = await api.post("/products", {
         ...form,
         price: Number(form.price),
         category_id: form.category_id ? Number(form.category_id) : null,
+        image_url: images[0] || "",
         variants,
       });
-      setMessage("Product created");
+
+      let note = "Product created";
+      // The remaining images are saved as the gallery
+      if (images.length > 1) {
+        try {
+          await api.put(`/products/${res.data.id}/images`, { images });
+        } catch {
+          note =
+            "Product created, but the extra images could not be saved. Use the Images button in the list to add them.";
+        }
+      }
+
+      setMessage(note);
       setForm(EMPTY_FORM);
+      setImages([]);
       loadProducts();
     } catch (err) {
       setMessage(err.response?.data?.message || "Could not create the product");
-    }
-  }
-
-  async function handleImageUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append("image", file);
-    setUploading(true);
-    setMessage("");
-    try {
-      const res = await api.post("/uploads", formData);
-      setForm((f) => ({ ...f, image_url: res.data.url }));
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Upload failed");
-    } finally {
-      setUploading(false);
     }
   }
 
@@ -92,16 +90,16 @@ export default function AdminProducts() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
-      <h1 className="text-3xl mb-6">Admin</h1>
+      <h1 className="text-4xl mb-6">Admin</h1>
       <AdminNav />
 
       <div className="grid lg:grid-cols-2 gap-10">
         {/* Create form */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white p-6 rounded-lg shadow-sm space-y-3"
+          className="bg-white p-6 rounded-lg shadow-sm space-y-3 self-start"
         >
-          <h2 className="text-xl">Add a product</h2>
+          <h2 className="text-2xl">Add a product</h2>
           {message && <p className="text-sm">{message}</p>}
 
           <input
@@ -171,20 +169,8 @@ export default function AdminProducts() {
             value={form.occasion}
             onChange={handleChange}
           />
-          <input
-            className="input"
-            name="image_url"
-            placeholder="Image URL"
-            value={form.image_url}
-            onChange={handleChange}
-          />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="text-sm"
-          />
-          {uploading && <p className="text-sm">Uploading...</p>}
+
+          <ImageManager images={images} setImages={setImages} />
 
           <label className="block text-sm">
             Variants, one per line: Size, Colour, Stock
@@ -200,18 +186,22 @@ export default function AdminProducts() {
 
         {/* Product list */}
         <div>
-          <h2 className="text-xl mb-4">Products ({products.length})</h2>
+          <h2 className="text-2xl mb-4">Products ({products.length})</h2>
           <div className="space-y-2 max-h-[700px] overflow-y-auto">
             {products.map((p) => (
               <div
                 key={p.id}
                 className="flex items-center gap-3 bg-white p-3 rounded-lg shadow-sm"
               >
-                <img
-                  src={p.image_url}
-                  alt=""
-                  className="w-12 h-16 object-cover rounded bg-gray-100"
-                />
+                {p.image_url ? (
+                  <img
+                    src={p.image_url}
+                    alt=""
+                    className="w-12 h-16 object-cover rounded bg-sand"
+                  />
+                ) : (
+                  <div className="w-12 h-16 rounded bg-sand" />
+                )}
                 <div className="flex-1 text-sm">
                   <Link
                     to={`/product/${p.id}`}
@@ -219,10 +209,16 @@ export default function AdminProducts() {
                   >
                     {p.name}
                   </Link>
-                  <p className="text-gray-500">
+                  <p className="text-ink/60">
                     {formatPrice(p.price)} · stock {p.total_stock}
                   </p>
                 </div>
+                <Link
+                  to={`/admin/products/${p.id}/images`}
+                  className="text-sm text-primary underline"
+                >
+                  Images
+                </Link>
                 <button
                   onClick={() => hideProduct(p.id)}
                   className="text-sm text-red-600 underline"
