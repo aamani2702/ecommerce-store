@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api";
+import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import { payForOrder } from "../payment";
 import { formatPrice } from "../utils";
 
 export default function Checkout() {
+  const { user } = useAuth();
   const { cart, refreshCart } = useCart();
   const navigate = useNavigate();
   const [address, setAddress] = useState("");
@@ -15,12 +18,23 @@ export default function Checkout() {
     e.preventDefault();
     setError("");
     setPlacing(true);
+    let orderId = null;
     try {
+      // 1. Create the order (stock is reserved and the cart is emptied)
       const res = await api.post("/orders", { shipping_address: address });
+      orderId = res.data.id;
       await refreshCart();
-      navigate(`/orders/${res.data.id}`);
+
+      // 2. Open the payment window
+      const paid = await payForOrder(orderId, user);
+      navigate(`/orders/${orderId}${paid ? "?paid=1" : ""}`);
     } catch (err) {
-      setError(err.response?.data?.message || "Could not place the order");
+      if (orderId) {
+        // The order exists, so the customer can pay again from the order page
+        navigate(`/orders/${orderId}`);
+      } else {
+        setError(err.response?.data?.message || "Could not place the order");
+      }
     } finally {
       setPlacing(false);
     }
@@ -43,7 +57,7 @@ export default function Checkout() {
         onSubmit={placeOrder}
         className="bg-white p-6 rounded-lg shadow-sm space-y-4"
       >
-        <h1 className="text-2xl">Shipping address</h1>
+        <h1 className="text-3xl">Shipping address</h1>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <textarea
           className="input h-32"
@@ -53,15 +67,15 @@ export default function Checkout() {
           required
         />
         <button className="btn btn-primary w-full" disabled={placing}>
-          {placing ? "Placing order..." : "Place order"}
+          {placing ? "Please wait..." : "Place order and pay"}
         </button>
-        <p className="text-xs text-gray-500">
-          Payment is not connected yet. Orders are saved as pending.
+        <p className="text-xs text-ink/60">
+          Payments run in test mode. No real money is charged.
         </p>
       </form>
 
       <div className="bg-white p-6 rounded-lg shadow-sm">
-        <h2 className="text-xl mb-4">Order summary</h2>
+        <h2 className="text-2xl mb-4">Order summary</h2>
         <ul className="space-y-2 text-sm">
           {cart.items.map((item) => (
             <li key={item.id} className="flex justify-between">

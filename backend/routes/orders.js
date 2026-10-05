@@ -201,4 +201,54 @@ router.put("/:id/status", authenticate, adminOnly, async (req, res) => {
   }
 });
 
+// POST /api/orders/:id/cancel  (customer: cancel my own unpaid order and put the stock back)
+router.post("/:id/cancel", authenticate, async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    return res.status(400).json({ message: "Invalid order id" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const orderResult = await client.query(
+      "SELECT id, status FROM orders WHERE id = $1 AND user_id = $2 FOR UPDATE",
+      [id, req.user.id],
+    );
+    if (orderResult.rows.length === 0) {
+      throw new HttpError(404, "Order not found");
+    }
+    if (orderResult.rows[0].status !== "pending") {
+      throw new HttpError(409, "Only unpaid orders can be cancelled");
+    }
+
+    const items = await client.query(
+      "SELECT variant_id, quantity FROM order_items WHERE order_id = $1 AND variant_id IS NOT NULL ORDER BY variant_id",
+      [id],
+    );
+    for (const item of items.rows) {
+      await client.query(
+        "UPDATE product_variants SET stock = stock + $1 WHERE id = $2",
+        [item.quantity, item.variant_id],
+      );
+    }
+
+    await client.query("UPDATE orders SET status = 'cancelled' WHERE id = $1", [
+      id,
+    ]);
+
+    await client.query("COMMIT");
+    res.json({ id, status: "cancelled" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  } finally {
+    client.release();
+  }
+});
 module.exports = router;

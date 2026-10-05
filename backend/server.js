@@ -4,6 +4,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const pool = require("./db");
+const paymentRoutes = require("./routes/payments");
 
 const authRoutes = require("./routes/auth");
 const categoryRoutes = require("./routes/categories");
@@ -59,6 +60,7 @@ app.use("/api/products", productImageRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Unknown address
 app.use((req, res) => {
