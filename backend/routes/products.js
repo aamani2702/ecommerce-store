@@ -9,7 +9,13 @@ const SORT_OPTIONS = {
   price_asc: "p.price ASC",
   price_desc: "p.price DESC",
   name: "p.name ASC",
+  rating: "rating_avg DESC NULLS LAST",
 };
+
+// Average rating and number of reviews, added to product queries
+const RATING_COLUMNS = `
+     (SELECT ROUND(AVG(r.rating), 1)::float FROM reviews r WHERE r.product_id = p.id) AS rating_avg,
+     (SELECT COUNT(*)::int FROM reviews r WHERE r.product_id = p.id) AS rating_count`;
 
 function handleDbError(err, res) {
   if (err.code === "23514") {
@@ -38,6 +44,7 @@ router.get("/", async (req, res) => {
     minPrice,
     maxPrice,
     sort,
+    sale,
   } = req.query;
   const page = Math.max(parseInt(req.query.page) || 1, 1);
   const limit = Math.min(Math.max(parseInt(req.query.limit) || 12, 1), 50);
@@ -76,6 +83,9 @@ router.get("/", async (req, res) => {
     values.push(Number(maxPrice));
     conditions.push(`p.price <= $${values.length}`);
   }
+  if (sale) {
+    conditions.push("p.mrp IS NOT NULL AND p.mrp > p.price");
+  }
 
   const where = "WHERE " + conditions.join(" AND ");
   const orderBy = SORT_OPTIONS[sort] || SORT_OPTIONS.newest;
@@ -90,11 +100,12 @@ router.get("/", async (req, res) => {
     const total = parseInt(countResult.rows[0].count);
 
     const result = await pool.query(
-      `SELECT p.id, p.name, p.description, p.price, p.gender, p.fabric,
-                 p.occasion, p.image_url,
+      `SELECT p.id, p.name, p.description, p.price, p.mrp, p.gender, p.fabric,
+                 p.occasion, p.image_url, p.created_at,
                  c.name AS category, c.slug AS category_slug,
                  COALESCE((SELECT SUM(v.stock) FROM product_variants v
-                           WHERE v.product_id = p.id), 0)::int AS total_stock
+                           WHERE v.product_id = p.id), 0)::int AS total_stock,
+                 ${RATING_COLUMNS}
           FROM products p
           LEFT JOIN categories c ON p.category_id = c.id
           ${where}
@@ -124,7 +135,8 @@ router.get("/:id", async (req, res) => {
   }
   try {
     const productResult = await pool.query(
-      `SELECT p.*, c.name AS category, c.slug AS category_slug
+      `SELECT p.*, c.name AS category, c.slug AS category_slug,
+                 ${RATING_COLUMNS}
           FROM products p
           LEFT JOIN categories c ON p.category_id = c.id
           WHERE p.id = $1 AND p.is_active = TRUE`,
@@ -150,6 +162,8 @@ router.post("/", authenticate, adminOnly, async (req, res) => {
     name,
     description,
     price,
+    mrp,
+    details,
     category_id,
     gender,
     fabric,
@@ -164,18 +178,34 @@ router.post("/", authenticate, adminOnly, async (req, res) => {
       .json({ message: "Name and a valid price are required" });
   }
 
+  // The original price (MRP) is optional, but it cannot be lower than the selling price
+  const mrpValue =
+    mrp === undefined || mrp === null || mrp === "" ? null : Number(mrp);
+  if (
+    mrpValue !== null &&
+    (Number.isNaN(mrpValue) || mrpValue < Number(price))
+  ) {
+    return res
+      .status(400)
+      .json({
+        message: "MRP must be a number that is not lower than the price",
+      });
+  }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
     const productResult = await client.query(
-      `INSERT INTO products (name, description, price, category_id, gender, fabric, occasion, image_url)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO products (name, description, price, mrp, details, category_id, gender, fabric, occasion, image_url)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           RETURNING *`,
       [
         name,
         description || null,
         price,
+        mrpValue,
+        details || null,
         category_id || null,
         gender || "women",
         fabric || null,
@@ -219,18 +249,22 @@ router.put("/:id", authenticate, adminOnly, async (req, res) => {
             name = COALESCE($1, name),
             description = COALESCE($2, description),
             price = COALESCE($3, price),
-            category_id = COALESCE($4, category_id),
-            gender = COALESCE($5, gender),
-            fabric = COALESCE($6, fabric),
-            occasion = COALESCE($7, occasion),
-            image_url = COALESCE($8, image_url),
-            is_active = COALESCE($9, is_active)
-          WHERE id = $10
+            mrp = COALESCE($4, mrp),
+            details = COALESCE($5, details),
+            category_id = COALESCE($6, category_id),
+            gender = COALESCE($7, gender),
+            fabric = COALESCE($8, fabric),
+            occasion = COALESCE($9, occasion),
+            image_url = COALESCE($10, image_url),
+            is_active = COALESCE($11, is_active)
+          WHERE id = $12
           RETURNING *`,
       [
         b.name ?? null,
         b.description ?? null,
         b.price ?? null,
+        b.mrp ?? null,
+        b.details ?? null,
         b.category_id ?? null,
         b.gender ?? null,
         b.fabric ?? null,

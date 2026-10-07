@@ -49,6 +49,39 @@ export const BRAND = {
       link: "/shop?occasion=Wedding",
     },
   ],
+  // Your WhatsApp number with country code, no plus sign or spaces (example: '919876543210').
+  // Leave '' to hide the WhatsApp button.
+  whatsapp: "+919876543210",
+
+  // "Shop by occasion" tiles. 'value' must match the Occasion you type when adding products.
+  // Add a photo by putting a file in frontend/public/occasions and writing image: '/occasions/wedding.jpg'
+  occasions: [
+    { name: "Wedding", value: "Wedding", image: "/occasions/wedding.webp" },
+    { name: "Festive", value: "Festive", image: "/occasions/festive.jfif" },
+    { name: "Casual", value: "Casual", image: "/occasions/casual.jpg" },
+  ],
+
+  // The size guide pop-up. Edit the numbers to match your real measurements.
+  sizeGuide: {
+    unit: "inches",
+    columns: ["Size", "Bust", "Waist", "Hip"],
+    rows: [
+      ["S", "34", "28", "36"],
+      ["M", "36", "30", "38"],
+      ["L", "38", "32", "40"],
+      ["XL", "40", "34", "42"],
+      ["XXL", "42", "36", "44"],
+    ],
+    note: "These are body measurements. If you are between two sizes, choose the larger one.",
+  },
+
+  // Text for the product page panels. Edit these to match your real policies.
+  shippingInfo:
+    "Orders are packed within 2 to 3 working days. You can follow your order status on the Orders page.",
+  returnsInfo:
+    "Unpaid orders can be cancelled any time from the order page. For anything else, please contact us by email.",
+  careInfo:
+    "Dry clean silk and heavily embroidered pieces. Hand wash cotton in cold water and iron on low heat.",
 
   // Pictures for the category tiles. The key is the category slug.
   // Leave empty to use placeholders. Example once you add the files:

@@ -21,7 +21,14 @@ const FABRICS = ["Silk", "Cotton", "Georgette", "Velvet"].map((f) => ({
 const SORTS = [
   { value: "price_asc", label: "Low to high" },
   { value: "price_desc", label: "High to low" },
+  { value: "rating", label: "Top rated" },
   { value: "name", label: "A to Z" },
+];
+const PRICE_RANGES = [
+  { key: "u2", label: "Under ₹2,000", min: "", max: "2000" },
+  { key: "2-5", label: "₹2,000 to ₹5,000", min: "2000", max: "5000" },
+  { key: "5-10", label: "₹5,000 to ₹10,000", min: "5000", max: "10000" },
+  { key: "o10", label: "Above ₹10,000", min: "10000", max: "" },
 ];
 
 function FilterSelect({ label, value, onChange, options, allLabel = "All" }) {
@@ -79,6 +86,28 @@ export default function Shop() {
     setParams(next);
   }
 
+  // The price filter uses two URL values (minPrice and maxPrice)
+  function setPrice(key) {
+    const next = new URLSearchParams(params);
+    next.delete("minPrice");
+    next.delete("maxPrice");
+    next.delete("page");
+    const range = PRICE_RANGES.find((r) => r.key === key);
+    if (range) {
+      if (range.min) next.set("minPrice", range.min);
+      if (range.max) next.set("maxPrice", range.max);
+    }
+    setParams(next);
+  }
+
+  function removeKeys(keys) {
+    const next = new URLSearchParams(params);
+    keys.forEach((k) => next.delete(k));
+    next.delete("page");
+    setParams(next);
+    if (keys.includes("search")) setSearch("");
+  }
+
   function goToPage(page) {
     const next = new URLSearchParams(params);
     next.set("page", page);
@@ -96,12 +125,42 @@ export default function Shop() {
     setParams({});
   }
 
+  const currentRange =
+    PRICE_RANGES.find(
+      (r) =>
+        r.min === (params.get("minPrice") || "") &&
+        r.max === (params.get("maxPrice") || ""),
+    ) || null;
+
+  // The small removable tags that show which filters are active
+  const chips = [];
+  if (params.get("search"))
+    chips.push({ label: `Search: ${params.get("search")}`, keys: ["search"] });
+  if (params.get("category")) {
+    const cat = categories.find((c) => c.slug === params.get("category"));
+    chips.push({
+      label: cat ? cat.name : params.get("category"),
+      keys: ["category"],
+    });
+  }
+  if (params.get("gender")) {
+    const g = GENDERS.find((x) => x.value === params.get("gender"));
+    chips.push({ label: g ? g.label : params.get("gender"), keys: ["gender"] });
+  }
+  if (params.get("occasion"))
+    chips.push({ label: params.get("occasion"), keys: ["occasion"] });
+  if (params.get("fabric"))
+    chips.push({ label: params.get("fabric"), keys: ["fabric"] });
+  if (params.get("sale")) chips.push({ label: "On sale", keys: ["sale"] });
+  if (currentRange)
+    chips.push({ label: currentRange.label, keys: ["minPrice", "maxPrice"] });
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="section-title">Shop</h1>
+      <h1 className="section-title">{params.get("sale") ? "Sale" : "Shop"}</h1>
 
       {/* One compact bar: search + filters (filters sit behind a button on phones) */}
-      <div className="bg-white rounded-lg shadow-sm p-3 mb-8">
+      <div className="bg-white rounded-lg shadow-sm p-3 mb-4">
         <div className="flex flex-wrap items-end gap-3">
           <form
             onSubmit={handleSearch}
@@ -160,6 +219,16 @@ export default function Shop() {
               options={FABRICS}
             />
             <FilterSelect
+              label="Price"
+              value={currentRange ? currentRange.key : ""}
+              onChange={setPrice}
+              options={PRICE_RANGES.map((r) => ({
+                value: r.key,
+                label: r.label,
+              }))}
+              allLabel="Any"
+            />
+            <FilterSelect
               label="Sort by"
               value={params.get("sort") || ""}
               onChange={(v) => setFilter("sort", v)}
@@ -176,6 +245,22 @@ export default function Shop() {
           </div>
         </div>
       </div>
+
+      {/* Active filters as removable tags */}
+      {chips.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {chips.map((chip) => (
+            <button
+              key={chip.label}
+              onClick={() => removeKeys(chip.keys)}
+              className="inline-flex items-center gap-2 bg-pastel text-ink text-xs px-3 py-1.5 rounded-full"
+            >
+              {chip.label}
+              <span aria-hidden="true">×</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {slow && (
         <p className="text-center text-sm text-ink/60 mb-6">

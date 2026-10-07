@@ -38,7 +38,7 @@ export default function Footer() {
           <p className="text-ink/80">{BRAND.email}</p>
         </div>
       </div>
-      <div className="border-t border-pastel-dark text-center text-xs text-ink/60 py-4">
+      <div className="border-t border-pastel-dark text-center text-xs text-ink/60 py-4 pb-20 md:pb-4">
         © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
       </div>
     </footer>

@@ -13,6 +13,8 @@ const productImageRoutes = require("./routes/productImages");
 const cartRoutes = require("./routes/cart");
 const orderRoutes = require("./routes/orders");
 const uploadRoutes = require("./routes/uploads");
+const wishlistRoutes = require("./routes/wishlist");
+const reviewRoutes = require("./routes/reviews");
 
 const app = express();
 
@@ -61,6 +63,8 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/wishlist", wishlistRoutes);
+app.use("/api", reviewRoutes);
 
 // Unknown address
 app.use((req, res) => {

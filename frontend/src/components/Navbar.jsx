@@ -1,12 +1,25 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
 import { BRAND } from "../config";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { cart } = useCart();
+  const { count: wishlistCount } = useWishlist();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    api
+      .get("/categories")
+      .then((res) => setCategories(res.data))
+      .catch(() => {});
+  }, []);
 
   function handleLogout() {
     logout();
@@ -15,6 +28,13 @@ export default function Navbar() {
 
   const linkClass = ({ isActive }) =>
     `pb-0.5 border-b ${isActive ? "text-primary border-primary" : "border-transparent hover:text-primary"}`;
+
+  const badge = (n) =>
+    n > 0 && (
+      <span className="absolute -top-2 -right-4 bg-accent text-ink text-[10px] font-semibold rounded-full px-1.5 py-0.5 leading-none">
+        {n}
+      </span>
+    );
 
   return (
     <>
@@ -25,7 +45,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* Row 1: the brand name, centred and smaller */}
+      {/* Row 1: the brand name, centred */}
       <div className="bg-cream text-center pt-3 pb-2 px-4">
         <Link to="/" className="inline-block">
           {BRAND.logo ? (
@@ -42,12 +62,95 @@ export default function Navbar() {
         </Link>
       </div>
 
-      {/* Row 2: the links, in the right corner (stays visible while scrolling) */}
+      {/* Row 2: the links (stays visible while scrolling) */}
       <nav className="sticky top-0 z-30 bg-cream/95 backdrop-blur border-y border-pastel-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-end gap-x-5 sm:gap-x-8 gap-y-2 text-xs sm:text-sm uppercase tracking-widest">
-          <NavLink to="/shop" className={linkClass}>
+          {/* Laptop: Shop with a drop-down menu */}
+          <div
+            className="relative hidden md:block"
+            onMouseEnter={() => setMenuOpen(true)}
+            onMouseLeave={() => setMenuOpen(false)}
+          >
+            <NavLink to="/shop" className={linkClass}>
+              Shop
+            </NavLink>
+            {menuOpen && (
+              <div className="absolute left-1/2 -translate-x-1/2 top-full pt-4 z-40">
+                <div className="bg-white border border-pastel-dark shadow-xl rounded-lg p-6 grid grid-cols-2 gap-10 min-w-[440px] normal-case tracking-normal text-sm">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-ink/50 mb-3">
+                      Shop by category
+                    </p>
+                    <ul className="space-y-2">
+                      {categories.map((c) => (
+                        <li key={c.id}>
+                          <Link
+                            to={`/shop?category=${c.slug}`}
+                            onClick={() => setMenuOpen(false)}
+                            className="hover:text-primary"
+                          >
+                            {c.name}
+                          </Link>
+                        </li>
+                      ))}
+                      <li>
+                        <Link
+                          to="/shop"
+                          onClick={() => setMenuOpen(false)}
+                          className="text-primary underline"
+                        >
+                          View all
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-ink/50 mb-3">
+                      Shop by occasion
+                    </p>
+                    <ul className="space-y-2">
+                      {(BRAND.occasions || []).map((o) => (
+                        <li key={o.value}>
+                          <Link
+                            to={`/shop?occasion=${o.value}`}
+                            onClick={() => setMenuOpen(false)}
+                            className="hover:text-primary"
+                          >
+                            {o.name}
+                          </Link>
+                        </li>
+                      ))}
+                      <li>
+                        <Link
+                          to="/shop?sale=1"
+                          onClick={() => setMenuOpen(false)}
+                          className="text-primary underline"
+                        >
+                          Sale
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Phone: plain Shop link */}
+          <NavLink
+            to="/shop"
+            className={({ isActive }) => `md:hidden ${linkClass({ isActive })}`}
+          >
             Shop
           </NavLink>
+
+          <Link
+            to="/shop?sale=1"
+            className="pb-0.5 border-b border-transparent text-primary hover:border-primary"
+          >
+            Sale
+          </Link>
+
           {user?.role === "admin" && (
             <NavLink to="/admin/products" className={linkClass}>
               Admin
@@ -58,17 +161,25 @@ export default function Navbar() {
               Orders
             </NavLink>
           )}
+
+          <Link
+            to="/wishlist"
+            aria-label="Wishlist"
+            className="relative pb-0.5 border-b border-transparent hover:text-primary"
+          >
+            <span className="hidden sm:inline">Wishlist</span>
+            <span className="sm:hidden text-base normal-case">♡</span>
+            {badge(wishlistCount)}
+          </Link>
+
           <Link
             to="/cart"
             className="relative pb-0.5 border-b border-transparent hover:text-primary"
           >
             Cart
-            {cart.itemCount > 0 && (
-              <span className="absolute -top-2 -right-4 bg-accent text-ink text-[10px] font-semibold rounded-full px-1.5 py-0.5 leading-none">
-                {cart.itemCount}
-              </span>
-            )}
+            {badge(cart.itemCount)}
           </Link>
+
           {user ? (
             <button
               onClick={handleLogout}

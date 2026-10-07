@@ -8,7 +8,9 @@ import { formatPrice } from "../../utils";
 const EMPTY_FORM = {
   name: "",
   description: "",
+  details: "",
   price: "",
+  mrp: "",
   category_id: "",
   gender: "women",
   fabric: "",
@@ -57,6 +59,7 @@ export default function AdminProducts() {
       const res = await api.post("/products", {
         ...form,
         price: Number(form.price),
+        mrp: form.mrp === "" ? null : Number(form.mrp),
         category_id: form.category_id ? Number(form.category_id) : null,
         image_url: images[0] || "",
         variants,
@@ -69,7 +72,7 @@ export default function AdminProducts() {
           await api.put(`/products/${res.data.id}/images`, { images });
         } catch {
           note =
-            "Product created, but the extra images could not be saved. Use the Images button in the list to add them.";
+            "Product created, but the extra images could not be saved. Use the Images link in the list to add them.";
         }
       }
 
@@ -113,21 +116,47 @@ export default function AdminProducts() {
           <textarea
             className="input h-24"
             name="description"
-            placeholder="Description"
+            placeholder="Short description"
             value={form.description}
             onChange={handleChange}
           />
-          <input
-            className="input"
-            name="price"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Price"
-            value={form.price}
+          <textarea
+            className="input h-28"
+            name="details"
+            placeholder={
+              "Details, one per line (for example):\nFabric: Pure silk\nIncludes: Saree and blouse piece"
+            }
+            value={form.details}
             onChange={handleChange}
-            required
           />
+
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              className="input"
+              name="price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Selling price"
+              value={form.price}
+              onChange={handleChange}
+              required
+            />
+            <input
+              className="input"
+              name="mrp"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Original price (optional)"
+              value={form.mrp}
+              onChange={handleChange}
+            />
+          </div>
+          <p className="text-xs text-ink/60">
+            Fill the original price (higher than the selling price) to show a
+            sale tag and a struck-through price.
+          </p>
 
           <select
             className="input"
@@ -187,7 +216,7 @@ export default function AdminProducts() {
         {/* Product list */}
         <div>
           <h2 className="text-2xl mb-4">Products ({products.length})</h2>
-          <div className="space-y-2 max-h-[700px] overflow-y-auto">
+          <div className="space-y-2 max-h-[900px] overflow-y-auto">
             {products.map((p) => (
               <div
                 key={p.id}
@@ -210,7 +239,13 @@ export default function AdminProducts() {
                     {p.name}
                   </Link>
                   <p className="text-ink/60">
-                    {formatPrice(p.price)} · stock {p.total_stock}
+                    {formatPrice(p.price)}
+                    {p.mrp && Number(p.mrp) > Number(p.price) && (
+                      <span className="line-through ml-2">
+                        {formatPrice(p.mrp)}
+                      </span>
+                    )}{" "}
+                    · stock {p.total_stock}
                   </p>
                 </div>
                 <Link
