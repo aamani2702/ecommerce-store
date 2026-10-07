@@ -10,6 +10,19 @@ export const BRAND = {
 
   // Put the client's real email here
   email: "onagaaamani@gmail.com",
+  // Thin bar at the very top. Set to '' to hide it.
+  announcement: "Handpicked ethnic wear for every celebration",
+
+  // Optional: put your logo file in frontend/public (for example logo.png) and write '/logo.png'.
+  // Leave '' to show the brand name in the script font instead.
+  logo: "",
+
+  // The strip of three short lines under the banner. Set to [] to hide it.
+  highlights: [
+    "Handpicked fabrics",
+    "Secure online payments",
+    "Easy order tracking",
+  ],
 
   // Banner slides on the home page (they change every 5 seconds).
   // Replace the placeholder images later with your own photos (see Step 10).

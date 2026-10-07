@@ -14,18 +14,37 @@ export default function Navbar() {
   }
 
   const linkClass = ({ isActive }) =>
-    isActive ? "text-primary font-semibold" : "hover:text-primary";
+    `pb-0.5 border-b ${isActive ? "text-primary border-primary" : "border-transparent hover:text-primary"}`;
 
   return (
-    <header className="bg-pastel text-ink sticky top-0 z-20 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link
-          to="/"
-          className="font-heading text-3xl font-semibold tracking-wide"
-        >
-          {BRAND.name}
+    <>
+      {/* Thin announcement bar */}
+      {BRAND.announcement && (
+        <div className="bg-primary text-cream text-center text-[11px] sm:text-xs tracking-widest uppercase py-2 px-3">
+          {BRAND.announcement}
+        </div>
+      )}
+
+      {/* Row 1: the brand name, centred and smaller */}
+      <div className="bg-cream text-center pt-3 pb-2 px-4">
+        <Link to="/" className="inline-block">
+          {BRAND.logo ? (
+            <img
+              src={BRAND.logo}
+              alt={BRAND.name}
+              className="h-12 sm:h-14 mx-auto"
+            />
+          ) : (
+            <span className="font-brand text-4xl sm:text-5xl text-primary leading-none">
+              {BRAND.name}
+            </span>
+          )}
         </Link>
-        <nav className="flex items-center gap-3 sm:gap-6 text-sm tracking-wide">
+      </div>
+
+      {/* Row 2: the links, in the right corner (stays visible while scrolling) */}
+      <nav className="sticky top-0 z-30 bg-cream/95 backdrop-blur border-y border-pastel-dark">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-end gap-x-5 sm:gap-x-8 gap-y-2 text-xs sm:text-sm uppercase tracking-widest">
           <NavLink to="/shop" className={linkClass}>
             Shop
           </NavLink>
@@ -39,16 +58,22 @@ export default function Navbar() {
               Orders
             </NavLink>
           )}
-          <Link to="/cart" className="relative hover:text-primary">
+          <Link
+            to="/cart"
+            className="relative pb-0.5 border-b border-transparent hover:text-primary"
+          >
             Cart
             {cart.itemCount > 0 && (
-              <span className="absolute -top-2 -right-4 bg-accent text-ink text-xs rounded-full px-1.5">
+              <span className="absolute -top-2 -right-4 bg-accent text-ink text-[10px] font-semibold rounded-full px-1.5 py-0.5 leading-none">
                 {cart.itemCount}
               </span>
             )}
           </Link>
           {user ? (
-            <button onClick={handleLogout} className="hover:text-primary">
+            <button
+              onClick={handleLogout}
+              className="uppercase tracking-widest hover:text-primary"
+            >
               Logout
             </button>
           ) : (
@@ -56,8 +81,8 @@ export default function Navbar() {
               Login
             </NavLink>
           )}
-        </nav>
-      </div>
-    </header>
+        </div>
+      </nav>
+    </>
   );
 }

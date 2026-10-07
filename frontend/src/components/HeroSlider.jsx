@@ -3,23 +3,26 @@ import { Link } from "react-router-dom";
 import { BRAND } from "../config";
 
 export default function HeroSlider() {
-  const slides = BRAND.heroSlides;
+  const slides = BRAND.heroSlides || [];
   const [current, setCurrent] = useState(0);
 
   // Move to the next slide every 5 seconds
   useEffect(() => {
-    if (slides.length < 2) return;
+    if (slides.length < 2) return undefined;
     const timer = setInterval(() => {
       setCurrent((c) => (c + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
   }, [slides.length]);
 
+  if (slides.length === 0) return null;
+
   const slide = slides[current];
+  const hasText = Boolean(slide.title);
 
   return (
-    <section className="relative h-[420px] md:h-[560px] overflow-hidden bg-sand">
-      {/* Background photos: only the current one is visible (fades) */}
+    <section className="relative h-[460px] sm:h-[520px] md:h-[600px] overflow-hidden bg-sand">
+      {/* Background photos: only the current one is visible (they fade) */}
       {slides.map((s, i) => (
         <div
           key={i}
@@ -29,31 +32,39 @@ export default function HeroSlider() {
           style={{
             backgroundImage: `url(${s.image})`,
             backgroundSize: "cover",
-            backgroundPosition: "center",
+            backgroundPosition: s.position || "center",
           }}
         />
       ))}
 
-      <div className="hero-overlay absolute inset-0" />
-
-      {/* Text */}
-      <div className="relative h-full max-w-7xl mx-auto px-4 flex items-center">
-        <div className="max-w-md">
-          <p className="uppercase tracking-widest text-sm text-primary">
-            {slide.label}
-          </p>
-          <h1 className="text-5xl md:text-6xl leading-tight mt-2">
-            {slide.title}
-          </h1>
-          <p className="mt-4 text-ink/80">{slide.text}</p>
-          <Link
-            to={slide.link || "/shop"}
-            className="btn bg-accent text-ink mt-6"
-          >
-            Shop now
-          </Link>
-        </div>
-      </div>
+      {hasText ? (
+        <>
+          <div className="hero-overlay absolute inset-0" />
+          <div className="relative h-full max-w-7xl mx-auto px-5 flex items-end md:items-center pb-16 md:pb-0">
+            <div className="max-w-md mx-auto md:mx-0 text-center md:text-left">
+              <p className="uppercase tracking-[0.3em] text-xs sm:text-sm text-primary">
+                {slide.label}
+              </p>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl leading-tight mt-2">
+                {slide.title}
+              </h1>
+              <p className="mt-3 text-sm sm:text-base text-ink/80">
+                {slide.text}
+              </p>
+              <Link to={slide.link || "/shop"} className="btn btn-primary mt-5">
+                {slide.cta || "Shop now"}
+              </Link>
+            </div>
+          </div>
+        </>
+      ) : (
+        // A banner photo that already contains its own text: the whole photo is a link
+        <Link
+          to={slide.link || "/shop"}
+          className="absolute inset-0"
+          aria-label="Open collection"
+        />
+      )}
 
       {/* Dots */}
       <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
