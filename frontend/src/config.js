@@ -12,6 +12,21 @@ export const BRAND = {
   email: "onagaaamani@gmail.com",
   // Thin bar at the very top. Set to '' to hide it.
   announcement: "Handpicked ethnic wear for every celebration",
+  // The "Our story" block on the home page.
+  // Add a photo by putting a file in frontend/public (for example story.jpg) and writing image: '/story.jpg'
+  story: {
+    image: "",
+    label: "Our story",
+    title: "Made for the moments that matter",
+    text: "Ethnic wear is more than clothing. It is how we celebrate. Our collection brings together timeless styles and beautiful fabrics for weddings, festivals, and everyday elegance. Replace these lines with your own story.",
+    link: "/shop",
+    cta: "Explore the collection",
+  },
+
+  // The delivery box on the product page. Write the delivery time you can really keep.
+  delivery: {
+    estimate: "5 to 7 working days",
+  },
 
   // Optional: put your logo file in frontend/public (for example logo.png) and write '/logo.png'.
   // Leave '' to show the brand name in the script font instead.

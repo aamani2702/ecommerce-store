@@ -32,6 +32,94 @@ function ScrollToTop() {
   return null;
 }
 
+// The key restarts the fade every time the page address changes
+function AnimatedRoutes() {
+  const location = useLocation();
+  return (
+    <div key={location.pathname} className="page-fade">
+      <Routes location={location}>
+        <Route path="/" element={<Home />} />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/wishlist"
+          element={
+            <ProtectedRoute>
+              <Wishlist />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cart"
+          element={
+            <ProtectedRoute>
+              <Cart />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute>
+              <Orders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders/:id"
+          element={
+            <ProtectedRoute>
+              <OrderDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/products"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminProducts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/products/:id/images"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminProductImages />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/categories"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminCategories />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminOrders />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -42,85 +130,7 @@ export default function App() {
             <WishlistProvider>
               <Navbar />
               <main className="min-h-[70vh]">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/shop" element={<Shop />} />
-                  <Route path="/product/:id" element={<ProductDetail />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route
-                    path="/wishlist"
-                    element={
-                      <ProtectedRoute>
-                        <Wishlist />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/cart"
-                    element={
-                      <ProtectedRoute>
-                        <Cart />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/checkout"
-                    element={
-                      <ProtectedRoute>
-                        <Checkout />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/orders"
-                    element={
-                      <ProtectedRoute>
-                        <Orders />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/orders/:id"
-                    element={
-                      <ProtectedRoute>
-                        <OrderDetail />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/products"
-                    element={
-                      <ProtectedRoute adminOnly>
-                        <AdminProducts />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/products/:id/images"
-                    element={
-                      <ProtectedRoute adminOnly>
-                        <AdminProductImages />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/categories"
-                    element={
-                      <ProtectedRoute adminOnly>
-                        <AdminCategories />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/orders"
-                    element={
-                      <ProtectedRoute adminOnly>
-                        <AdminOrders />
-                      </ProtectedRoute>
-                    }
-                  />
-                </Routes>
+                <AnimatedRoutes />
               </main>
               <Footer />
               <FloatingButtons />

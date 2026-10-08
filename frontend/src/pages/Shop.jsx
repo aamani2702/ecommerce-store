@@ -19,9 +19,10 @@ const FABRICS = ["Silk", "Cotton", "Georgette", "Velvet"].map((f) => ({
   label: f,
 }));
 const SORTS = [
+  { value: "popular", label: "Bestsellers" },
+  { value: "rating", label: "Top rated" },
   { value: "price_asc", label: "Low to high" },
   { value: "price_desc", label: "High to low" },
-  { value: "rating", label: "Top rated" },
   { value: "name", label: "A to Z" },
 ];
 const PRICE_RANGES = [
@@ -33,7 +34,7 @@ const PRICE_RANGES = [
 
 function FilterSelect({ label, value, onChange, options, allLabel = "All" }) {
   return (
-    <label className="block text-xs w-full md:w-32">
+    <label className="block text-xs w-full md:w-36">
       <span className="block mb-1 font-medium text-ink/70">{label}</span>
       <select
         className="input text-sm"
@@ -61,7 +62,6 @@ export default function Shop() {
     totalPages: 1,
   });
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(params.get("search") || "");
   const [showFilters, setShowFilters] = useState(false);
   const slow = useSlowLoading(loading);
 
@@ -105,7 +105,6 @@ export default function Shop() {
     keys.forEach((k) => next.delete(k));
     next.delete("page");
     setParams(next);
-    if (keys.includes("search")) setSearch("");
   }
 
   function goToPage(page) {
@@ -115,13 +114,7 @@ export default function Shop() {
     window.scrollTo(0, 0);
   }
 
-  function handleSearch(e) {
-    e.preventDefault();
-    setFilter("search", search.trim());
-  }
-
   function clearAll() {
-    setSearch("");
     setParams({});
   }
 
@@ -132,7 +125,8 @@ export default function Shop() {
         r.max === (params.get("maxPrice") || ""),
     ) || null;
 
-  // The small removable tags that show which filters are active
+  // The small removable tags that show which filters are active.
+  // A search made from the navbar shows up here, so it can be removed.
   const chips = [];
   if (params.get("search"))
     chips.push({ label: `Search: ${params.get("search")}`, keys: ["search"] });
@@ -152,97 +146,83 @@ export default function Shop() {
   if (params.get("fabric"))
     chips.push({ label: params.get("fabric"), keys: ["fabric"] });
   if (params.get("sale")) chips.push({ label: "On sale", keys: ["sale"] });
+  if (params.get("sold"))
+    chips.push({ label: "Bestsellers only", keys: ["sold"] });
   if (currentRange)
     chips.push({ label: currentRange.label, keys: ["minPrice", "maxPrice"] });
 
+  const title = params.get("sale")
+    ? "Sale"
+    : params.get("sold")
+      ? "Bestsellers"
+      : "Shop";
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="section-title">{params.get("sale") ? "Sale" : "Shop"}</h1>
+      <h1 className="section-title">{title}</h1>
 
-      {/* One compact bar: search + filters (filters sit behind a button on phones) */}
+      {/* Filters (search is in the navbar). On phones they sit behind a button. */}
       <div className="bg-white rounded-lg shadow-sm p-3 mb-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <form
-            onSubmit={handleSearch}
-            className="flex items-end gap-2 grow md:grow-0"
-          >
-            <label className="block text-xs grow md:w-48">
-              <span className="block mb-1 font-medium text-ink/70">Search</span>
-              <input
-                className="input text-sm"
-                placeholder="Search products"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </label>
-            <button className="btn btn-primary">Go</button>
-          </form>
-
+        {/* This wrapper hides the button on laptops. (A button styled with .btn ignores md:hidden.) */}
+        <div className="md:hidden">
           <button
             type="button"
             onClick={() => setShowFilters((s) => !s)}
-            className="btn btn-outline md:hidden"
+            className="btn btn-outline w-full"
           >
             {showFilters ? "Hide filters" : "Filters"}
           </button>
+        </div>
 
-          <div
-            className={`${
-              showFilters ? "grid" : "hidden"
-            } grid-cols-2 gap-3 w-full md:flex md:flex-wrap md:items-end md:w-auto`}
-          >
-            <FilterSelect
-              label="Category"
-              value={params.get("category") || ""}
-              onChange={(v) => setFilter("category", v)}
-              options={categories.map((c) => ({
-                value: c.slug,
-                label: c.name,
-              }))}
-            />
-            <FilterSelect
-              label="For"
-              value={params.get("gender") || ""}
-              onChange={(v) => setFilter("gender", v)}
-              options={GENDERS}
-            />
-            <FilterSelect
-              label="Occasion"
-              value={params.get("occasion") || ""}
-              onChange={(v) => setFilter("occasion", v)}
-              options={OCCASIONS}
-            />
-            <FilterSelect
-              label="Fabric"
-              value={params.get("fabric") || ""}
-              onChange={(v) => setFilter("fabric", v)}
-              options={FABRICS}
-            />
-            <FilterSelect
-              label="Price"
-              value={currentRange ? currentRange.key : ""}
-              onChange={setPrice}
-              options={PRICE_RANGES.map((r) => ({
-                value: r.key,
-                label: r.label,
-              }))}
-              allLabel="Any"
-            />
-            <FilterSelect
-              label="Sort by"
-              value={params.get("sort") || ""}
-              onChange={(v) => setFilter("sort", v)}
-              options={SORTS}
-              allLabel="Newest"
-            />
-            <button
-              type="button"
-              onClick={clearAll}
-              className="btn btn-outline"
-            >
-              Clear
-            </button>
-          </div>
+        <div
+          className={`${
+            showFilters ? "grid mt-3" : "hidden"
+          } grid-cols-2 gap-3 md:mt-0 md:flex md:flex-wrap md:items-end`}
+        >
+          <FilterSelect
+            label="Category"
+            value={params.get("category") || ""}
+            onChange={(v) => setFilter("category", v)}
+            options={categories.map((c) => ({ value: c.slug, label: c.name }))}
+          />
+          <FilterSelect
+            label="For"
+            value={params.get("gender") || ""}
+            onChange={(v) => setFilter("gender", v)}
+            options={GENDERS}
+          />
+          <FilterSelect
+            label="Occasion"
+            value={params.get("occasion") || ""}
+            onChange={(v) => setFilter("occasion", v)}
+            options={OCCASIONS}
+          />
+          <FilterSelect
+            label="Fabric"
+            value={params.get("fabric") || ""}
+            onChange={(v) => setFilter("fabric", v)}
+            options={FABRICS}
+          />
+          <FilterSelect
+            label="Price"
+            value={currentRange ? currentRange.key : ""}
+            onChange={setPrice}
+            options={PRICE_RANGES.map((r) => ({
+              value: r.key,
+              label: r.label,
+            }))}
+            allLabel="Any"
+          />
+          <FilterSelect
+            label="Sort by"
+            value={params.get("sort") || ""}
+            onChange={(v) => setFilter("sort", v)}
+            options={SORTS}
+            allLabel="Newest"
+          />
+          <button type="button" onClick={clearAll} className="btn btn-outline">
+            Clear
+          </button>
         </div>
       </div>
 

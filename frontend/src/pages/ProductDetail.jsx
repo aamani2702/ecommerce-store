@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api";
 import Breadcrumbs from "../components/Breadcrumbs";
+import DeliveryCheck from "../components/DeliveryCheck";
 import ProductCard from "../components/ProductCard";
 import ReviewsSection from "../components/ReviewsSection";
 import SizeGuide from "../components/SizeGuide";
@@ -24,6 +25,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [images, setImages] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
+  const [zoom, setZoom] = useState({ on: false, x: 50, y: 50 });
   const [related, setRelated] = useState([]);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState("");
@@ -95,6 +97,11 @@ export default function ProductDetail() {
   const ratingAvg = summary ? summary.average : product.rating_avg || 0;
   const ratingCount = summary ? summary.count : product.rating_count || 0;
 
+  // Zoom only works with a mouse. Touch screens keep the normal photo.
+  const canHover =
+    typeof window !== "undefined" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
   const detailLines = (product.details || "")
     .split("\n")
     .map((line) => line.trim())
@@ -129,6 +136,16 @@ export default function ProductDetail() {
 
   function showNext(step) {
     setActiveImage((i) => (i + step + gallery.length) % gallery.length);
+  }
+
+  function handleZoomMove(e) {
+    if (!canHover) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setZoom({
+      on: true,
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    });
   }
 
   function chooseColor(c) {
@@ -179,12 +196,23 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-10">
           {/* Image gallery */}
           <div>
-            <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-sand">
+            <div
+              className={`relative aspect-[3/4] rounded-lg overflow-hidden bg-sand ${
+                canHover ? "cursor-zoom-in" : ""
+              }`}
+              onMouseMove={handleZoomMove}
+              onMouseLeave={() => setZoom({ on: false, x: 50, y: 50 })}
+            >
               {mainImage && (
                 <img
                   src={mainImage}
                   alt={product.name}
                   className="w-full h-full object-cover"
+                  style={{
+                    transform: zoom.on ? "scale(1.9)" : "scale(1)",
+                    transformOrigin: `${zoom.x}% ${zoom.y}%`,
+                    transition: "transform 0.15s ease-out",
+                  }}
                 />
               )}
               {percent > 0 && (
@@ -341,6 +369,8 @@ export default function ProductDetail() {
                 className="border border-pastel-dark"
               />
             </div>
+
+            <DeliveryCheck />
 
             {/* Information panels */}
             <div className="mt-8 border-t border-pastel-dark">

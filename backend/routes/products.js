@@ -10,12 +10,20 @@ const SORT_OPTIONS = {
   price_desc: "p.price DESC",
   name: "p.name ASC",
   rating: "rating_avg DESC NULLS LAST",
+  popular: "sold_count DESC",
 };
 
 // Average rating and number of reviews, added to product queries
 const RATING_COLUMNS = `
-     (SELECT ROUND(AVG(r.rating), 1)::float FROM reviews r WHERE r.product_id = p.id) AS rating_avg,
-     (SELECT COUNT(*)::int FROM reviews r WHERE r.product_id = p.id) AS rating_count`;
+  (SELECT ROUND(AVG(r.rating), 1)::float FROM reviews r WHERE r.product_id = p.id) AS rating_avg,
+  (SELECT COUNT(*)::int FROM reviews r WHERE r.product_id = p.id) AS rating_count`;
+
+// Units sold in paid, shipped or delivered orders (used for Bestsellers)
+const SOLD_SUBQUERY = `(SELECT COALESCE(SUM(oi.quantity), 0)::int
+  FROM order_items oi
+  JOIN orders o ON o.id = oi.order_id
+  JOIN product_variants v ON v.id = oi.variant_id
+  WHERE v.product_id = p.id AND o.status IN ('paid', 'shipped', 'delivered'))`;
 
 function handleDbError(err, res) {
   if (err.code === "23514") {
@@ -45,6 +53,7 @@ router.get("/", async (req, res) => {
     maxPrice,
     sort,
     sale,
+    sold,
   } = req.query;
   const page = Math.max(parseInt(req.query.page) || 1, 1);
   const limit = Math.min(Math.max(parseInt(req.query.limit) || 12, 1), 50);
@@ -86,6 +95,10 @@ router.get("/", async (req, res) => {
   if (sale) {
     conditions.push("p.mrp IS NOT NULL AND p.mrp > p.price");
   }
+  if (sold) {
+    // Only products that have actually been sold
+    conditions.push(`${SOLD_SUBQUERY} > 0`);
+  }
 
   const where = "WHERE " + conditions.join(" AND ");
   const orderBy = SORT_OPTIONS[sort] || SORT_OPTIONS.newest;
@@ -93,24 +106,28 @@ router.get("/", async (req, res) => {
   try {
     const countResult = await pool.query(
       `SELECT COUNT(*) FROM products p
-          LEFT JOIN categories c ON p.category_id = c.id
-          ${where}`,
+       LEFT JOIN categories c ON p.category_id = c.id
+       ${where}`,
       values,
     );
     const total = parseInt(countResult.rows[0].count);
 
     const result = await pool.query(
       `SELECT p.id, p.name, p.description, p.price, p.mrp, p.gender, p.fabric,
-                 p.occasion, p.image_url, p.created_at,
-                 c.name AS category, c.slug AS category_slug,
-                 COALESCE((SELECT SUM(v.stock) FROM product_variants v
-                           WHERE v.product_id = p.id), 0)::int AS total_stock,
-                 ${RATING_COLUMNS}
-          FROM products p
-          LEFT JOIN categories c ON p.category_id = c.id
-          ${where}
-          ORDER BY ${orderBy}, p.id
-          LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+              p.occasion, p.image_url, p.created_at,
+              c.name AS category, c.slug AS category_slug,
+              COALESCE((SELECT SUM(v.stock) FROM product_variants v
+                        WHERE v.product_id = p.id), 0)::int AS total_stock,
+              (SELECT pi.url FROM product_images pi
+               WHERE pi.product_id = p.id
+               ORDER BY pi.position, pi.id LIMIT 1) AS hover_image,
+              ${SOLD_SUBQUERY} AS sold_count,
+              ${RATING_COLUMNS}
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       ${where}
+       ORDER BY ${orderBy}, p.id
+       LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
       [...values, limit, offset],
     );
 
@@ -127,6 +144,33 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /api/products/suggest?q=  (public: quick suggestions while typing)
+// This route must stay ABOVE /:id, otherwise "suggest" would be read as an id.
+router.get("/suggest", async (req, res) => {
+  const q = String(req.query.q || "").trim();
+  if (q.length < 2) {
+    return res.json([]);
+  }
+  // Escape the characters that act as wildcards in a LIKE search
+  const safe = q.replace(/[%_\\]/g, "\\$&");
+  try {
+    const result = await pool.query(
+      `SELECT p.id, p.name, p.price, p.mrp, p.image_url, c.name AS category
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       WHERE p.is_active = TRUE
+         AND (p.name ILIKE $1 OR c.name ILIKE $1 OR p.fabric ILIKE $1)
+       ORDER BY (p.name ILIKE $2) DESC, p.name
+       LIMIT 6`,
+      [`%${safe}%`, `${safe}%`],
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET /api/products/:id  (public: one product with its variants)
 router.get("/:id", async (req, res) => {
   const id = parseInt(req.params.id);
@@ -136,10 +180,10 @@ router.get("/:id", async (req, res) => {
   try {
     const productResult = await pool.query(
       `SELECT p.*, c.name AS category, c.slug AS category_slug,
-                 ${RATING_COLUMNS}
-          FROM products p
-          LEFT JOIN categories c ON p.category_id = c.id
-          WHERE p.id = $1 AND p.is_active = TRUE`,
+              ${RATING_COLUMNS}
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       WHERE p.id = $1 AND p.is_active = TRUE`,
       [id],
     );
     if (productResult.rows.length === 0) {
@@ -198,8 +242,8 @@ router.post("/", authenticate, adminOnly, async (req, res) => {
 
     const productResult = await client.query(
       `INSERT INTO products (name, description, price, mrp, details, category_id, gender, fabric, occasion, image_url)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING *`,
       [
         name,
         description || null,
@@ -219,8 +263,8 @@ router.post("/", authenticate, adminOnly, async (req, res) => {
     for (const v of variants || []) {
       const variantResult = await client.query(
         `INSERT INTO product_variants (product_id, size, color, stock)
-            VALUES ($1, $2, $3, $4)
-            RETURNING id, size, color, stock`,
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, size, color, stock`,
         [product.id, v.size, v.color, v.stock || 0],
       );
       createdVariants.push(variantResult.rows[0]);
@@ -246,19 +290,19 @@ router.put("/:id", authenticate, adminOnly, async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE products SET
-            name = COALESCE($1, name),
-            description = COALESCE($2, description),
-            price = COALESCE($3, price),
-            mrp = COALESCE($4, mrp),
-            details = COALESCE($5, details),
-            category_id = COALESCE($6, category_id),
-            gender = COALESCE($7, gender),
-            fabric = COALESCE($8, fabric),
-            occasion = COALESCE($9, occasion),
-            image_url = COALESCE($10, image_url),
-            is_active = COALESCE($11, is_active)
-          WHERE id = $12
-          RETURNING *`,
+         name = COALESCE($1, name),
+         description = COALESCE($2, description),
+         price = COALESCE($3, price),
+         mrp = COALESCE($4, mrp),
+         details = COALESCE($5, details),
+         category_id = COALESCE($6, category_id),
+         gender = COALESCE($7, gender),
+         fabric = COALESCE($8, fabric),
+         occasion = COALESCE($9, occasion),
+         image_url = COALESCE($10, image_url),
+         is_active = COALESCE($11, is_active)
+       WHERE id = $12
+       RETURNING *`,
       [
         b.name ?? null,
         b.description ?? null,
@@ -316,8 +360,8 @@ router.post("/:id/variants", authenticate, adminOnly, async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO product_variants (product_id, size, color, stock)
-          VALUES ($1, $2, $3, $4)
-          RETURNING id, product_id, size, color, stock`,
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, product_id, size, color, stock`,
       [id, size, color, stock || 0],
     );
     res.status(201).json(result.rows[0]);

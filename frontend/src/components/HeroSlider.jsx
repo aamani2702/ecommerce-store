@@ -5,6 +5,13 @@ import { BRAND } from "../config";
 export default function HeroSlider() {
   const slides = BRAND.heroSlides || [];
   const [current, setCurrent] = useState(0);
+  const [started, setStarted] = useState(false);
+
+  // Lets the first photo begin its slow zoom right after the page appears
+  useEffect(() => {
+    const timer = setTimeout(() => setStarted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Move to the next slide every 5 seconds
   useEffect(() => {
@@ -22,17 +29,18 @@ export default function HeroSlider() {
 
   return (
     <section className="relative h-[460px] sm:h-[520px] md:h-[600px] overflow-hidden bg-sand">
-      {/* Background photos: only the current one is visible (they fade) */}
+      {/* Background photos: only the current one is visible. It fades in and zooms slowly. */}
       {slides.map((s, i) => (
         <div
           key={i}
-          className={`absolute inset-0 transition-opacity duration-1000 ${
-            i === current ? "opacity-100" : "opacity-0"
-          }`}
+          className="absolute inset-0"
           style={{
             backgroundImage: `url(${s.image})`,
             backgroundSize: "cover",
             backgroundPosition: s.position || "center",
+            opacity: i === current ? 1 : 0,
+            transform: i === current && started ? "scale(1.08)" : "scale(1)",
+            transition: "opacity 1s ease, transform 9s ease-out",
           }}
         />
       ))}
@@ -41,7 +49,11 @@ export default function HeroSlider() {
         <>
           <div className="hero-overlay absolute inset-0" />
           <div className="relative h-full max-w-7xl mx-auto px-5 flex items-end md:items-center pb-16 md:pb-0">
-            <div className="max-w-md mx-auto md:mx-0 text-center md:text-left">
+            {/* The key makes the text fade in again for every slide */}
+            <div
+              key={current}
+              className="fade-up max-w-md mx-auto md:mx-0 text-center md:text-left"
+            >
               <p className="uppercase tracking-[0.3em] text-xs sm:text-sm text-primary">
                 {slide.label}
               </p>
